@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code Cleaner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              900: '#0a0a0b',
+              800: '#131316',
+              700: '#1c1c21',
+              600: '#26262d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    textarea, pre {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    }
+    textarea::placeholder {
+      color: #4b5563;
+    }
+    .copy-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-gray-100">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <header class="text-center mb-10">
+      <h1 class="text-3xl font-light tracking-tight text-white mb-2">Claude Code Cleaner</h1>
+      <p class="text-gray-500 text-sm">Paste console output to strip ANSI codes and normalize whitespace</p>
+    </header>
+
+    <div class="space-y-6">
+      <div>
+        <textarea
+          id="input"
+          rows="12"
+          placeholder="Paste Claude Code console output here..."
+          class="w-full bg-dark-800 border border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-transparent resize-y transition-all"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-center">
+        <button
+          id="cleanBtn"
+          class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-dark-900"
+        >
+          Clean Output
+        </button>
+      </div>
+
+      <div class="relative">
+        <div class="absolute top-3 right-3 z-10">
+          <button
+            id="copyBtn"
+            class="copy-btn px-4 py-2 bg-dark-600 hover:bg-dark-700 text-gray-300 text-sm rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500/30 hidden"
+          >
+            Copy
+          </button>
+        </div>
+        <pre
+          id="output"
+          class="w-full min-h-[200px] bg-dark-800 border border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-200 overflow-x-auto whitespace-pre-wrap break-words"
+        ><span class="text-gray-600">Cleaned output will appear here...</span></pre>
+      </div>
+    </div>
+
+    <footer class="text-center mt-12 text-gray-600 text-xs">
+      No data stored. Everything runs locally in your browser.
+    </footer>
+  </div>
+
+  <script>
+    function cleanOutput(text) {
+      return text
+        // Remove ANSI escape codes (colors, cursor, etc.)
+        .replace(/\x1B\[[0-9;]*[A-Za-z]/g, '')
+        // Remove OSC sequences (title changes, hyperlinks, etc.)
+        .replace(/\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)/g, '')
+        // Remove other escape sequences
+        .replace(/\x1B[PX^_][^\x1B]*\x1B\\/g, '')
+        .replace(/\x1B[@-Z\\-_]/g, '')
+        // Remove other control characters (except newline, tab, carriage return)
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        // Normalize carriage returns
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        // Collapse multiple spaces/tabs to single space (preserve newlines)
+        .replace(/[^\S\n]+/g, ' ')
+        // Remove trailing whitespace per line
+        .replace(/ +$/gm, '')
+        // Remove leading whitespace per line (optional - keep if you want indentation)
+        // .replace(/^ +/gm, '')
+        // Collapse 3+ consecutive blank lines to 2
+        .replace(/\n{3,}/g, '\n\n')
+        // Trim start and end
+        .trim();
+    }
+
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const cleanBtn = document.getElementById('cleanBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    let cleanedText = '';
+
+    cleanBtn.addEventListener('click', () => {
+      const raw = input.value;
+      if (!raw.trim()) {
+        output.innerHTML = '<span class="text-gray-600">Cleaned output will appear here...</span>';
+        copyBtn.classList.add('hidden');
+        cleanedText = '';
+        return;
+      }
+
+      cleanedText = cleanOutput(raw);
+      output.textContent = cleanedText;
+      copyBtn.classList.remove('hidden');
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      if (!cleanedText) return;
+
+      try {
+        await navigator.clipboard.writeText(cleanedText);
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('bg-green-600', 'hover:bg-green-600');
+        copyBtn.classList.remove('bg-dark-600', 'hover:bg-dark-700');
+
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.classList.remove('bg-green-600', 'hover:bg-green-600');
+          copyBtn.classList.add('bg-dark-600', 'hover:bg-dark-700');
+        }, 1500);
+      } catch (err) {
+        copyBtn.textContent = 'Failed';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+        }, 1500);
+      }
+    });
+  </script>
+</body>
+</html>
