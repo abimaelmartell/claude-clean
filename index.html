@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -21,22 +22,40 @@
       }
     }
   </script>
+  <script>
+    // Apply theme before page renders to prevent flash
+    (function() {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   <style>
     textarea, pre {
       font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     }
-    textarea::placeholder {
-      color: #4b5563;
-    }
-    .copy-btn:active {
+    .copy-btn:active, .theme-btn:active {
       transform: scale(0.95);
     }
   </style>
 </head>
-<body class="bg-dark-900 min-h-screen text-gray-100">
+<body class="bg-gray-50 dark:bg-dark-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-200">
   <div class="max-w-4xl mx-auto px-4 py-12">
-    <header class="text-center mb-10">
-      <h1 class="text-3xl font-light tracking-tight text-white mb-2">Claude Code Cleaner</h1>
+    <header class="text-center mb-10 relative">
+      <button
+        id="themeToggle"
+        class="theme-btn absolute right-0 top-0 p-2 rounded-lg bg-gray-200 dark:bg-dark-700 hover:bg-gray-300 dark:hover:bg-dark-600 transition-colors"
+        aria-label="Toggle theme"
+      >
+        <svg id="sunIcon" class="w-5 h-5 text-gray-700 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="moonIcon" class="w-5 h-5 text-gray-700 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+      <h1 class="text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-2">Claude Code Cleaner</h1>
       <p class="text-gray-500 text-sm">Paste console output to strip ANSI codes and normalize whitespace</p>
     </header>
 
@@ -46,14 +65,14 @@
           id="input"
           rows="12"
           placeholder="Paste Claude Code console output here..."
-          class="w-full bg-dark-800 border border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-transparent resize-y transition-all"
+          class="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-transparent resize-y transition-colors"
         ></textarea>
       </div>
 
       <div class="flex justify-center">
         <button
           id="cleanBtn"
-          class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-dark-900"
+          class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-dark-900"
         >
           Clean Output
         </button>
@@ -63,19 +82,19 @@
         <div class="absolute top-3 right-3 z-10">
           <button
             id="copyBtn"
-            class="copy-btn px-4 py-2 bg-dark-600 hover:bg-dark-700 text-gray-300 text-sm rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500/30 hidden"
+            class="copy-btn px-4 py-2 bg-gray-200 dark:bg-dark-600 hover:bg-gray-300 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500/30 hidden"
           >
             Copy
           </button>
         </div>
         <pre
           id="output"
-          class="w-full min-h-[200px] bg-dark-800 border border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-200 overflow-x-auto whitespace-pre-wrap break-words"
-        ><span class="text-gray-600">Cleaned output will appear here...</span></pre>
+          class="w-full min-h-[200px] bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-600 rounded-xl px-5 py-4 text-sm text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap break-words transition-colors"
+        ><span class="text-gray-400 dark:text-gray-600">Cleaned output will appear here...</span></pre>
       </div>
     </div>
 
-    <footer class="text-center mt-12 text-gray-600 text-xs">
+    <footer class="text-center mt-12 text-gray-500 dark:text-gray-600 text-xs">
       No data stored. Everything runs locally in your browser.
     </footer>
   </div>
@@ -99,8 +118,6 @@
         .replace(/[^\S\n]+/g, ' ')
         // Remove trailing whitespace per line
         .replace(/ +$/gm, '')
-        // Remove leading whitespace per line (optional - keep if you want indentation)
-        // .replace(/^ +/gm, '')
         // Collapse 3+ consecutive blank lines to 2
         .replace(/\n{3,}/g, '\n\n')
         // Trim start and end
@@ -111,13 +128,20 @@
     const output = document.getElementById('output');
     const cleanBtn = document.getElementById('cleanBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const themeToggle = document.getElementById('themeToggle');
 
     let cleanedText = '';
+
+    // Theme toggle
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
 
     cleanBtn.addEventListener('click', () => {
       const raw = input.value;
       if (!raw.trim()) {
-        output.innerHTML = '<span class="text-gray-600">Cleaned output will appear here...</span>';
+        output.innerHTML = '<span class="text-gray-400 dark:text-gray-600">Cleaned output will appear here...</span>';
         copyBtn.classList.add('hidden');
         cleanedText = '';
         return;
@@ -134,13 +158,13 @@
       try {
         await navigator.clipboard.writeText(cleanedText);
         copyBtn.textContent = 'Copied!';
-        copyBtn.classList.add('bg-green-600', 'hover:bg-green-600');
-        copyBtn.classList.remove('bg-dark-600', 'hover:bg-dark-700');
+        copyBtn.classList.add('bg-green-600', 'hover:bg-green-600', 'text-white');
+        copyBtn.classList.remove('bg-gray-200', 'dark:bg-dark-600', 'hover:bg-gray-300', 'dark:hover:bg-dark-700', 'text-gray-700', 'dark:text-gray-300');
 
         setTimeout(() => {
           copyBtn.textContent = 'Copy';
-          copyBtn.classList.remove('bg-green-600', 'hover:bg-green-600');
-          copyBtn.classList.add('bg-dark-600', 'hover:bg-dark-700');
+          copyBtn.classList.remove('bg-green-600', 'hover:bg-green-600', 'text-white');
+          copyBtn.classList.add('bg-gray-200', 'dark:bg-dark-600', 'hover:bg-gray-300', 'dark:hover:bg-dark-700', 'text-gray-700', 'dark:text-gray-300');
         }, 1500);
       } catch (err) {
         copyBtn.textContent = 'Failed';
