@@ -114,8 +114,8 @@
         // Normalize carriage returns
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n')
-        // Collapse multiple spaces/tabs to single space (preserve newlines)
-        .replace(/[^\S\n]+/g, ' ')
+        // Convert tabs to spaces (preserve alignment)
+        .replace(/\t/g, '    ')
         // Remove trailing whitespace per line
         .replace(/ +$/gm, '')
         // Collapse 3+ consecutive blank lines to 2
